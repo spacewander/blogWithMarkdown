@@ -1,7 +1,7 @@
 Python FAQ : 参数传递
 ====
 
-[原文出处]()
+[原文出处](http://me.veekun.com/blog/2012/05/23/python-faq-passing/)
 
 **我怎样才能传引用？Python中是传值还是传引用？**
 
@@ -103,4 +103,105 @@ C++的解决之道是引入references(引用)
 不，仅仅是输出两次1!在函数中，赋值给`n`不会影响`n`所引用的值；它只是让`n`这个名字引用另外别的东西。
 所以`n`将会是`2`。然后函数结束了，`n`随风而逝。结果`i`没有改变因为你没有对`i`做任何事情。
 
+这跟改变一个现有的值不一样：
+
+    def lengthen(n):
+        n.append(2)
+
+    i = [1]
+    print i # [1]
+    lengthen(i)
+    print i # [1,2]
+
+这一次，`n`不再被重新赋值；相反，方法调用直接修改了`n`的值。
+还是熟悉的列表，`n`和`i`依然引用它，但是列表的内容改变了。
+
+懂了没？
+还有另外一个小技巧：操作符重载在这里起到不可思议的作用。
+举个例子，你可以用**+=**重写这两函数。在`increment`中，`i`不会改变，但在`lengthen`中，它变了！
+这是因为ints(还有strs,tuples,以及其他类型)是不可变的，所以它们通过创建一个新对象并赋值给原对象来实现+=。
+但是lists是可变的，所以作为简写法，+=表现得如同`.extend()`并原地(in-place)修改列表。
+这种古怪之处与传递无关，仅仅是因为对+=不同的重载。
+
+总之，嗯，这当然也不是传引用。
+
+如果有区别的话，Python走的是第三条道路：pass-by-object。
+
+替代的做法
+----
+
+等等，当你写下`increment`时，你想做什么？
+
+* **返回原料**
+
+    在C/C++中指针/引用参数的大多数用法是获取一些状态值，并且函数的结果通过修改特定的输入变量表现出来。
+
+    但这不是C，所以为什么我们要这样做呢？你可以仅仅返回多个值。
+
+        def foo():
+            return True,"abc"
+
+        status,value = foo()
+
+    或者，在错误的时候抛出异常。当调用者忘记检查状态码时，也不会大吃一惊。
+
+* **使用方法**
+
+    如果你*真的*想修改调用者的值，你就可以使用一个对象来储存关联的值，并把函数变为方法。
+    方法可以跟所需要的调用者的属性打交道，并把修改后的状态封装起来。
+
+        class Increment(object):
+            def __init__(self,count):
+                self.count = count
+
+            def increment(self):
+                self.count += 1
+
+        i = Increment(1)
+        print i.count # 1
+        i.increment()
+        print i.count # 2
+
+* **使用可变对象**
+
+    最后一招，你可以把值包装在list(或dict,object,etc.)，传递到函数去，让函数修改它的值，并在输出端提取新的值。
+
+    我开玩笑而已，千万不要这么做。
+
+寻根究底
+----
+
+如果你想要知道的话！在CPython中，每一个Python的值实际上是`PyObject*`。所以参数传递，赋值还有别的表现得跟C语言中的是差不多的，
+如果你写的C中所有的东西都是指针(并且不用双重指针来表演障眼法)。
+
+    void increment(int *n){
+        int newval = *n + 1;
+        n = &newval;
+    }
+
+    int i = 1;
+    increment(&i);
+
+这跟上面的Python函数等价的。(请忽略接下来的segfault)
+赋值给`n`不会有什么变化，因为只有指针指向的值是共享的。
+但是如果值类似于列表是可变的，你可以在原地改变它。
+
+这就是为什么两个答案都是对的：你可以说Python是传值，当值是指针……你也可以说Python是传引用，当引用是副本。
+你也可以说它是"pass-by-pointer"。不过这就是钻牛角尖了。
+
+结论
+----
+
+* Python函数不会替换调用参数所引用的对象。
+* 对一个参数名重新赋值不会起任何作用。
+* Python函数可以修改参数，如果这个参数是可变的。
+* 在Python中没有什么是被隐式复制的。
+* 停止用C++的思维打量Python，你会感觉更良好。
+
+拓展阅读
+----
+
+* Python官方文档没有透彻地诠释传递的语法。我能找到的最好的说明在[这里](http://docs.python.org/reference/expressions.html#calls )
+* 这个[示例](http://python.net/~goodger/projects/pycon/2007/idiomatic/handout.html#other-languages-have-variables )真的酷毙了。
+* Pass-by-object有时也叫pass-by-sharing.from [维基百科](http://en.wikipedia.org/wiki/Evaluation_strategy#Call_by_sharing)
 
