@@ -72,6 +72,12 @@ BufWinLeave那里的问题？
 于是，我又走上阅读Vim文档的道路。在反复通读了`autocmd.txt`之后，我终于大概弄清楚
 这些Vim事件的执行顺序。
 
+    BufReadPre -> 获得文件名及大小 -> BufReadPost -> BufRead -> BufWinEnter ->
+    BufEnter -> BufWrite -> BufWritePre -> 写入磁盘 -> BufWritePost -> 
+    BufLeave -> BufWinLeave
+
+    BufLeave <-> BufEnter
+
 但即使如此，我反复地把那两个BufXXX事件换成其他的BufXXX事件，要不无法解决E32问题
 ，要不可以避免E32，却无法正常加载视图。
 
