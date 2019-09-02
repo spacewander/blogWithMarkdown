@@ -118,3 +118,24 @@ silent!命令，它可以使得命令的输出完全屏蔽掉，包括错误。(
 
 问题终于解决了！虽然现在依旧会有错误抛出，不过这已经跟我无关了。眼不见为净嘛。
 
+BufWinLeave * mkview with unnamed file: Error 32
+
+Switching to ?* as the regex will no longer match empty file names. I actually recommend you switch to the following, which is a corresponding block of .vimrc that has been tweaked to suppress many of the errors you are likely to encounter when following the referenced advice.
+
+augroup AutoSaveFolds
+     autocmd!
+     " view files are about 500 bytes
+     " bufleave but not bufwinleave captures closing 2nd tab
+     " nested is needed by bufwrite* (if triggered via other autocmd)
+     autocmd BufWinLeave,BufLeave,BufWritePost ?* nested silent! mkview!
+     autocmd BufWinEnter ?* silent loadview
+augroup end
+The BufWritePost event (+ nested) can be left out if you prefer, though you will experience no penalty for leaving it in.
+
+Furthermore, I use
+
+set viewoptions=folds,cursor
+set sessionoptions=folds
+
+参考；https://vi.stackovernet.com/cn/q/4214
+希望作者合进去，多谢！
